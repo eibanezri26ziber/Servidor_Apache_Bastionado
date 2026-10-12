@@ -1,3 +1,25 @@
+<?php
+
+$usuario_valido = "admin@gmail.com";
+$password_valida = "123";
+
+$error = "";
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action'])) {
+    $email = trim($_POST['email'] ?? '');
+    $password =$_POST['password'] ?? '';
+
+    // Condicional if/else para validar usuario y contraseña
+    if ($email ===$usuario_valido && $password ===$password_valida) {
+        // Redireccionar a otra página si el login es exitoso
+        header('Location: index_registrado.html');
+        exit();
+    } else {
+        $error = "Usuario o contraseña incorrectos";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -71,12 +93,14 @@
 
         <div class="px-8 pb-8">
             <!-- LOGIN FORM -->
-            <form id="login-form" onsubmit="handleLoginSubmit(event)" class="form-fade-in space-y-4" novalidate>
+            <form id="login-form" method="POST" action="" onsubmit="handleLoginSubmit(event)" class="form-fade-in space-y-4" novalidate>
+                <input type="hidden" name="login_action" value="1">
                 <div>
                     <label for="login-email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Correo o Usuario</label>
                     <input 
                         type="text" 
                         id="login-email" 
+                        name="email"
                         placeholder="nombre@ejemplo.com"
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                     >
@@ -86,12 +110,12 @@
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label for="login-password" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Contraseña</label>
-                        <a href="#" onclick="showToast('Enlace de recuperación enviado', 'info'); return false;" class="text-xs text-indigo-600 hover:text-indigo-700 font-medium hover:underline">¿Olvidaste tu contraseña?</a>
                     </div>
                     <div class="relative">
                         <input 
                             type="password" 
                             id="login-password" 
+                            name="password"
                             placeholder="••••••••"
                             class="w-full px-4 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                         >
@@ -307,9 +331,8 @@
             }
 
             if (isValid) {
-                showToast('¡Inicio de sesión exitoso!', 'success');
-                document.getElementById('login-email').value = '';
-                document.getElementById('login-password').value = '';
+                // Si la validación en JS pasa, se envía el formulario al PHP
+                event.target.submit();
             }
         }
 
@@ -321,7 +344,6 @@
             const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
             const confirmPassword = document.getElementById('reg-confirm-password').value;
-            const terms = document.getElementById('reg-terms').checked;
             let isValid = true;
 
             if (!name) {
@@ -353,11 +375,6 @@
                 isValid = false;
             }
 
-            if (!terms) {
-                showError('', 'reg-terms-error', 'Debes aceptar los términos y condiciones');
-                isValid = false;
-            }
-
             if (isValid) {
                 showToast('¡Cuenta creada con éxito!', 'success');
                 document.getElementById('register-form').reset();
@@ -371,13 +388,19 @@
 
             const toast = document.createElement('div');
             const isSuccess = type === 'success';
-            const bgColor = isSuccess ? 'bg-emerald-600' : 'bg-slate-800';
+            const isError = type === 'error';
+            
+            let bgColor = 'bg-slate-800';
+            if (isSuccess) bgColor = 'bg-emerald-600';
+            if (isError) bgColor = 'bg-rose-600';
 
             toast.className = `${bgColor} text-white text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transition-all duration-300 transform -translate-y-2 opacity-0 pointer-events-auto`;
             
             const iconPath = isSuccess 
                 ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
-                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                : (isError 
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />' 
+                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />');
 
             toast.innerHTML = `<svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">${iconPath}</svg><span>${message}</span>`;
 
@@ -393,5 +416,14 @@
             }, 3000);
         }
     </script>
+
+    <!-- Si PHP detecta un error de credenciales, lanza la notificación Toast roja -->
+    <?php if (!empty($error)): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('<?php echo addslashes($error); ?>', 'error');
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>
